@@ -1,20 +1,19 @@
-https://public.tableau.com/app/profile/charisse.coffey/viz/AirbnbCustomerData/Dashboard1 
+---------------------
+FULL PROJECT LINK: https://docs.google.com/presentation/d/15Kdq8ld5p7bm88JPtr4arn0gHUozi28Y-saNRuPQX6w/edit?usp=sharing
 ---------------------
 -- Dataset: Resting Rabbit Airbnb Reservations
--- Source: Resting Rabbit Airbnb listing's Reservation Data
+-- Source: Resting Rabbit Airbnb Host Insights Data
 -- Queried using: BigQuery Sandbox
 ---------------------
--- Business Task: (1) To understand the Resting Rabbit Airbnb's guests better extracting demographic data by identifying booking patterns and key attributes of the core demographic to help inform better marketing decisions (2) Pull total earnings to date, average number of nights per stay to date 
 
----------------------
-
--- Preview data after importing
+-- Preview data after importing --
 
 SELECT *
-FROM `airbnb-data-385800.resting_rabbit.bookings`;
+FROM `airbnb-data-385800.resting_rabbit.bookings` 
 
--- PREPARE & CLEAN DATA
--- 1. Double checking for duplicates
+
+
+-- Double checking for duplicates --
 
 SELECT
   DISTINCT(confirmation_id)
@@ -23,22 +22,26 @@ FROM
   
 -- No duplicates found. All rows are distinct. --
 
+
+
 -- DATA ORGANIZATION & MANIPULATION
 -- 1. Adding new fields for earnings per night and total guests
 
 SELECT
-    confirmation_id, date_booked,guest_name, number_of_adults as adults, number_of_children as children, number_of_infants as infants,
-    ROUND((earnings/nights),2) as earnings_per_night,
-    (number_of_adults + number_of_children + number_of_infants) as total_guests,
-    CASE WHEN
-      number_of_children >= 1 or number_of_infants >= 1 THEN 'TRUE' ELSE 'FALSE'
-      END AS family_with_kids
-  FROM
+  confirmation_id, date_booked,guest_name, number_of_adults as adults, number_of_children as children, number_of_infants as infants,
+  ROUND((earnings/nights),2) as earnings_per_night,
+  (number_of_adults + number_of_children + number_of_infants) as total_guests,
+  CASE WHEN
+    number_of_children >= 1 or number_of_infants >= 1 THEN 'TRUE' ELSE 'FALSE'
+    END AS family_with_kids
+FROM
   `airbnb-data-385800.resting_rabbit.bookings`
-  ORDER BY
-    date_booked;
+ORDER BY
+  date_booked;
+  
+  
 
--- 2. Joining additional table (itinerary) consisting of customers' submitted answers for their reason for visit in order to extract more demographic information
+-- 2. Joining additional table (itinerary) consisting of customers' submitted answers for their reason for visit in order to extract more insights
 
 SELECT 
   bookings.confirmation_id, bookings.date_booked, guest_name, nights, earnings, 
@@ -49,13 +52,15 @@ SELECT
     END AS family_with_kids,
   reason_for_visit
 FROM
-`airbnb-data-385800.resting_rabbit.bookings`as bookings
+  `airbnb-data-385800.resting_rabbit.bookings`as bookings
 JOIN `airbnb-data-385800.resting_rabbit.itinerary` as itinerary
   ON bookings.confirmation_id = itinerary.confirmation_id;
+  
+  
 
 -- ANALYSIS
 -- *CREATING TEMP TABLE TO USE FOR NEXT FEW QUERIES*
--- 1. Identifying top 10 guests with highest earnings to offer special promotion and personalized 'thank you' using notes from       reason_for_visit
+-- 1. Identifying top 10 guests (highest earnings) to offer special promotion and personalized 'thank you' using notes from reason_for_visit
 
 CREATE TEMP TABLE complete_booking_info
 AS
@@ -68,7 +73,7 @@ AS
       END AS family_with_kids,
     reason_for_visit
   FROM
-  `airbnb-data-385800.resting_rabbit.bookings`as bookings
+    `airbnb-data-385800.resting_rabbit.bookings`as bookings
   JOIN `airbnb-data-385800.resting_rabbit.itinerary` as itinerary
     ON bookings.confirmation_id = itinerary.confirmation_id;
 
@@ -84,7 +89,9 @@ ORDER BY
   earnings desc
 LIMIT 10;
 
--- 2. Looking at frequency of guests mentioning a family related keyword in their reason for visit
+
+
+-- 2. Looking at frequency of guests mentioning a family related keyword in their reason for visit --
 
 SELECT 
   confirmation_id,
@@ -98,19 +105,29 @@ WHERE
   (reason_for_visit LIKE '%family%'
   OR reason_for_visit LIKE '%kid%'
   OR reason_for_visit LIKE '%son%'
+  OR reason_for_visit LIKE '%parents%'
   OR reason_for_visit LIKE '%daughter%'
+  OR reason_for_visit LIKE '%baby%'
   OR reason_for_visit LIKE '%aunt%'
   OR reason_for_visit LIKE '%uncle%'
   OR reason_for_visit LIKE '%mom%'
-  OR reason_for_visit LIKE '%dad%')
+  OR reason_for_visit LIKE '%dad%'
+  OR reason_for_visit LIKE '%sister%'
+  OR reason_for_visit LIKE '%brother%'
+  OR reason_for_visit LIKE '%cousin%'
+  OR reason_for_visit LIKE '%neice%'
+  OR reason_for_visit LIKE '%nephew%'
+  OR reason_for_visit LIKE '%law%')
 ORDER BY
   date_booked;
 
--- Result: Out of 58 total stays to date, 22 mention family. Will add percentage to visualization.
+-- Result: Out of 58 total stays to date, 36 mention family. Will add percentage to visualization.
 
--- 3. Looking at frequency of guests mentioning friends in their reason for visit. Will add percentage to visualization.
 
-SELECT 
+
+-- 3. Looking at frequency of guests mentioning friend related keyword in their reason for visit --
+
+SELECT
   confirmation_id,
   guest_name,
   reason_for_visit
@@ -118,14 +135,18 @@ FROM
   `airbnb-data-385800.resting_rabbit.complete_booking_info`
 WHERE
   (reason_for_visit LIKE '%friend%'
+  OR reason_for_visit LIKE '%friends%')
   AND reason_for_visit NOT LIKE '%boyfriend%'
-  AND reason_for_visit NOT LIKE '%girlfriend%')
+  AND reason_for_visit NOT LIKE '%girlfriend%'
+  AND reason_for_visit NOT LIKE '%family%'
 ORDER BY
   date_booked;
 
--- Result: Out of 58 total stays to date, 14 mention friends. Will add percentage to visualization.
+-- Result: Out of 58 total stays to date, 16 mention friends. Will add percentage to visualization.
 
--- 4. Looking at frequency of guests that are couples only
+
+
+-- 4. Looking at frequency of guests that are couples only --
 
 SELECT 
   confirmation_id,
@@ -145,10 +166,12 @@ WHERE
 ORDER BY
   date_booked;
 
--- Result: Out of 58 total stays to date, 5 are identified as a couple without mention of kids. Will add percentage to visualization.
+-- Result: Out of 58 total stays to date, 6 are identified as a couple. Will add percentage to visualization.
 
---5. How far in advance are guests booking their stay on average?
---*This will help with knowing how far in advance to begin marketing efforts for specific holidays, seasons, etc.*
+
+
+--5. How far in advance are guests booking their stay on average? --
+--*This will help with knowing how far in advance to begin marketing efforts for specific holidays, seasons, events, etc.*
 
 CREATE TEMP TABLE booking_ahead
 AS  
@@ -167,16 +190,3 @@ FROM
   booking_ahead;
 
 -- Result: 4.9 weeks. Will add percentage to visualization.
-
--- 6. What percentage of stays (to date) are one night stays?
-
-SELECT
-  confirmation_id, date_booked, guest_name, nights
-FROM
-`airbnb-data-385800.resting_rabbit.bookings`
-WHERE
-  nights = 1 
-ORDER BY
-  date_booked;
-
-  -- Result: Out of 58 total stays to date, 21 are one night stays. Will add percentage to visualization.
