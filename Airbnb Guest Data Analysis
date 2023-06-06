@@ -92,70 +92,88 @@ LIMIT 10;
 
 
 
--- 2. Looking at frequency of guests mentioning a family related keyword in their reason for visit --
+-- 2. Number of bookings mentioning a family related keyword in their reason for visit and this segment's total earnings --
 
-SELECT 
-  confirmation_id,
-  date_booked,
-  guest_name,
-  earnings, 
-  reason_for_visit
-FROM
-  `airbnb-data-385800.resting_rabbit.complete_booking_info`
-WHERE
-  (reason_for_visit LIKE '%family%'
-  OR reason_for_visit LIKE '%kid%'
-  OR reason_for_visit LIKE '%son%'
-  OR reason_for_visit LIKE '%parents%'
-  OR reason_for_visit LIKE '%daughter%'
-  OR reason_for_visit LIKE '%baby%'
-  OR reason_for_visit LIKE '%aunt%'
-  OR reason_for_visit LIKE '%uncle%'
-  OR reason_for_visit LIKE '%mom%'
-  OR reason_for_visit LIKE '%dad%'
-  OR reason_for_visit LIKE '%sister%'
-  OR reason_for_visit LIKE '%brother%'
-  OR reason_for_visit LIKE '%cousin%'
-  OR reason_for_visit LIKE '%neice%'
-  OR reason_for_visit LIKE '%nephew%'
-  OR reason_for_visit LIKE '%law%')
-ORDER BY
-  date_booked;
-
--- Result: Out of 58 total stays to date, 36 mention family. Will add percentage to visualization.
-
-
-
--- 3. Looking at frequency of guests mentioning friend related keyword in their reason for visit --
+CREATE TEMP TABLE family_stays
+AS
+  SELECT 
+    confirmation_id,
+    date_booked,
+    guest_name,
+    reason_for_visit,
+    earnings
+  FROM
+    `airbnb-data-385800.resting_rabbit.complete_booking_info`
+  WHERE
+    (reason_for_visit LIKE '%family%'
+    OR reason_for_visit LIKE '%kid%'
+    OR reason_for_visit LIKE '%son%'
+    OR reason_for_visit LIKE '%parents%'
+    OR reason_for_visit LIKE '%daughter%'
+    OR reason_for_visit LIKE '%baby%'
+    OR reason_for_visit LIKE '%aunt%'
+    OR reason_for_visit LIKE '%uncle%'
+    OR reason_for_visit LIKE '%mom%'
+    OR reason_for_visit LIKE '%dad%'
+    OR reason_for_visit LIKE '%sister%'
+    OR reason_for_visit LIKE '%brother%'
+    OR reason_for_visit LIKE '%cousin%'
+    OR reason_for_visit LIKE '%neice%'
+    OR reason_for_visit LIKE '%nephew%'
+    OR reason_for_visit LIKE '%law%')
+  ORDER BY
+    date_booked;
 
 SELECT
-  confirmation_id,
-  guest_name,
-  reason_for_visit
+  SUM(earnings) AS total_earnings
 FROM
-  `airbnb-data-385800.resting_rabbit.complete_booking_info`
-WHERE
-  (reason_for_visit LIKE '%friend%'
-  OR reason_for_visit LIKE '%friends%')
-  AND reason_for_visit NOT LIKE '%boyfriend%'
-  AND reason_for_visit NOT LIKE '%girlfriend%'
-  AND reason_for_visit NOT LIKE '%family%'
-ORDER BY
-  date_booked;
+  family_stays;
 
--- Result: Out of 58 total stays to date, 16 mention friends. Will add percentage to visualization.
+-- Result: Out of 58 total stays to date, 36 mention family. Total earnings = $23,019.07.
 
 
 
--- 4. Looking at frequency of guests that are couples only --
+-- 3. Number of bookings mentioning friend related keyword in their reason for visit and this segment's total earnings --
 
-SELECT 
-  confirmation_id,
-  guest_name,
-  reason_for_visit
+CREATE TEMP TABLE friend_stays
+AS
+  SELECT
+    confirmation_id,
+    guest_name,
+    reason_for_visit,
+    earnings
+  FROM
+    `airbnb-data-385800.resting_rabbit.complete_booking_info`
+  WHERE
+    (reason_for_visit LIKE '%friend%'
+    OR reason_for_visit LIKE '%friends%')
+    AND reason_for_visit NOT LIKE '%boyfriend%'
+    AND reason_for_visit NOT LIKE '%girlfriend%'
+    AND reason_for_visit NOT LIKE '%family%'
+  ORDER BY
+    date_booked;
+
+SELECT
+  SUM(earnings) AS total_earnings
 FROM
-  `airbnb-data-385800.resting_rabbit.complete_booking_info`
-WHERE
+  friend_stays;
+
+-- Result: Out of 58 total stays to date, 16 mention friends. Total earnings = $8,055.85.
+
+
+
+-- 4. Number of bookings that are couples only and this segment's total earnings --
+
+CREATE TEMP TABLE couple_stays
+AS  
+  SELECT
+    confirmation_id,
+    guest_name,
+    reason_for_visit,
+    earnings
+  FROM
+    `airbnb-data-385800.resting_rabbit.complete_booking_info`
+  WHERE
   (reason_for_visit LIKE '%boyfriend%'
   OR reason_for_visit LIKE '%girlfriend%'
   OR reason_for_visit LIKE '%partner%'
@@ -167,7 +185,12 @@ WHERE
 ORDER BY
   date_booked;
 
--- Result: Out of 58 total stays to date, 6 are identified as a couple. Will add percentage to visualization.
+SELECT
+  SUM(earnings) AS total_earnings
+FROM
+  couple_stays;
+
+-- Result: Out of 58 total stays to date, 6 are identified as a couple. Total earnings = $3,695.70.
 
 
 
@@ -190,4 +213,4 @@ SELECT
 FROM
   booking_ahead;
 
--- Result: 4.9 weeks. Will add percentage to visualization.
+-- Result: 4.9 weeks
